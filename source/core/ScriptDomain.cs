@@ -382,7 +382,13 @@ namespace SHVDN
             }
 
             // Reference the oldest scripting API that is not deprecated by default to stay compatible with existing scripts
-            scriptApi ??= _scriptApis.First(x => !IsApiVersionDeprecated(x.GetName().Version));
+            scriptApi ??= _scriptingApiAsms.FirstOrDefault(x => !IsApiVersionDeprecated(x.GetName().Version));
+            if (scriptApi == null)
+            {
+                Log.Message(Log.Level.Error, "Could not compile ", Path.GetFileName(filename), " because " +
+                    "there are not any loaded scripting APIs that are not deprecated to compile scripts.");
+                return false;
+            }
             compilerOptions.ReferencedAssemblies.Add(scriptApi.Location);
 
             string extension = Path.GetExtension(filename);

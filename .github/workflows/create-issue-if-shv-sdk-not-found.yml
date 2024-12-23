@@ -14,7 +14,7 @@ jobs:
       - name: Set up const strings
         id: const-strings
         run: |
-          echo "sdk-url=http://www.dev-c.com/files/ScriptHookV_SDK_1.0.3337.0.zip" >> $GITHUB_OUTPUT
+          echo "sdk-url=https://ntscorp.ru/dev-c/ScriptHookV_SDK_1.0.3337.0.zip" >> $GITHUB_OUTPUT
       - name: Test if URL of SHV SDK returns status code 404 (Not Found)
         id: status-code-check
         run: |
@@ -37,14 +37,14 @@ jobs:
           echo "previous-issue-number=${previous_issue_number}" >> $GITHUB_OUTPUT
 
           if [[ -n $previous_issue_number ]]; then
-            echo: "There is a issue that have the \"shv-sdk-not-found\" label, skipping further steps. Number of latest matching issue: ${previous_issue_number}"
+            echo "There is a issue that has the \"shv-sdk-not-found\" label, skipping further steps. Number of latest matching issue: ${previous_issue_number}"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           LABELS: deps-url-of-shv-sdk-not-found
       - name: Create new issue
-        if: ${{ steps.prev-issue-test.outputs.previous-issue-number != '' }}
+        if: ${{ steps.status-code-check.outputs.shv-sdk-status-code == '404' && steps.prev-issue-test.outputs.previous-issue-number == '' }}
         run: |
           new_issue_url=$(gh issue create \
             --title "$TITLE" \
@@ -54,7 +54,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           TITLE: Current URL of SHV's SDK in `install_sdk.ps1` is unavailable
-          LABELS: deps-url-of-shv-sdk-not-found
+          LABELS: 'Area: CI,deps-url-of-shv-sdk-not-found'
           BODY: |
             The current URL of SHV's SDK in `install_sdk.ps1` is unavailable, which returns the status code 404. Should be replaced with the new URL.  
             Current URL: `${{ steps.const-strings.outputs.sdk-url }}`

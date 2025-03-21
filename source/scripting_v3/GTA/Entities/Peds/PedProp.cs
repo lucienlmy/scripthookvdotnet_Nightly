@@ -68,24 +68,57 @@ namespace GTA
                 return true;
             }
 
+            // No need to test the variation if this method didn't return a bool where the operation has suceeded,
+            // since `SET_PED_PROP_INDEX` also tests one before applying it without returning anything.
             if (!IsVariationValid(index, textureIndex))
             {
                 return false;
             }
 
-            Function.Call(Hash.SET_PED_PROP_INDEX, _ped.Handle, (int)AnchorPoint, index - 1, textureIndex, 1);
+            const int SyncWithBlendParamUnused = 0;
+            Function.Call(Hash.SET_PED_PROP_INDEX, _ped.Handle, (int)AnchorPoint, index - 1, textureIndex,
+                SyncWithBlendParamUnused);
             return true;
         }
 
         public bool IsVariationValid(int index, int textureIndex = 0)
         {
-            if (index == 0)
+            const uint NumAnchors = 12;
+
+            if ((uint)AnchorPoint >= NumAnchors)
             {
-                return true; // No prop is always valid
+                return false;
             }
 
-            return Function.Call<bool>(Hash.SET_PED_PRELOAD_PROP_DATA, _ped.Handle, (int)AnchorPoint, index - 1, textureIndex);
+            // No prop is always valid if `index` or `textureIndex` is negative, and `SET_PED_PROP_INDEX` does nothing
+            // when either of the passed drawable index or texture index is negative.
+            int actualDrawableIndex = index - 1;
+            return IsPedPropDrawableVariationValid(_ped, AnchorPoint, actualDrawableIndex) &&
+                   IsPedPropTextureVariationValid(_ped, AnchorPoint, actualDrawableIndex, textureIndex);
         }
+
+        /// <summary>
+        /// Returns a value that indicates whether the drawable index is valid for the specified <see cref="Ped"/>
+        /// (strictly the ped's <see cref="Model"/>), anchor point, and drawable index.
+        /// Determines by testing if the drawable index is non-negative and less than the number of available drawable
+        /// variations.
+        /// </summary>
+        private static bool IsPedPropDrawableVariationValid(Ped ped, PedPropAnchorPoint anchorPoint, int drawableIndex)
+            => (drawableIndex >= 0 &&
+                (drawableIndex < Function.Call<int>(Hash.GET_NUMBER_OF_PED_PROP_DRAWABLE_VARIATIONS, ped.Handle,
+                    (int)anchorPoint)));
+
+        /// <summary>
+        /// Returns a value that indicates whether the drawable index is valid for the specified <see cref="Ped"/>
+        /// (strictly the ped's <see cref="Model"/>), anchor point, and drawable index.
+        /// Determines by testing if the drawable index is non-negative and less than the number of available texture
+        /// variations.
+        /// </summary>
+        private static bool IsPedPropTextureVariationValid(Ped ped, PedPropAnchorPoint anchorPoint, int drawableIndex,
+            int textureIndex)
+            => (textureIndex >= 0 &&
+                (textureIndex < Function.Call<int>(Hash.GET_NUMBER_OF_PED_PROP_TEXTURE_VARIATIONS, ped.Handle,
+                    (int)anchorPoint, drawableIndex)));
 
         public bool HasVariations => Count > 1;
 

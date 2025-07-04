@@ -56,36 +56,19 @@ namespace GTA
         public bool IsLoaded => Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, Name);
 
         /// <summary>
-        /// Attempts to load this <see cref="CrClipDictionary"/> into memory.
+        /// <para>
+        /// Requests the global streaming loader to load this <see cref="CrClipDictionary"/> so it will be eventually
+        /// loaded (unless getting interrupted by a <see cref="MarkAsNoLongerNeeded()"/> call of another SHVDN script).
+        /// </para>
+        /// <para>
+        /// You will need to test if the <see cref="CrClipDictionary"/> is loaded with <see cref="IsLoaded"/> every
+        /// frame until it is loaded before you can use it. The game starts loading pending streaming objects every
+        /// frame (with `<c>CStreaming::Update()</c>`) before the script update call.
+        /// </para>
         /// </summary>
         public void Request()
         {
             Function.Call(Hash.REQUEST_ANIM_DICT, Name);
-        }
-        /// <summary>
-        /// Attempts to load this <see cref="CrClipDictionary"/> into memory for a given period of time.
-        /// </summary>
-        /// <param name="timeout">The time (in milliseconds) before giving up trying to load this <see cref="CrClipDictionary"/>.</param>
-        /// <returns><see langword="true" /> if this <see cref="CrClipDictionary"/> is loaded; otherwise, <see langword="false" />.</returns>
-        public bool Request(int timeout)
-        {
-            Request();
-
-            int startTime = Environment.TickCount;
-            int maxElapsedTime = timeout >= 0 ? timeout : int.MaxValue;
-
-            while (!IsLoaded)
-            {
-                Script.Yield();
-                Request();
-
-                if (Environment.TickCount - startTime >= maxElapsedTime)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         /// <summary>
